@@ -121,7 +121,9 @@ const resolvers = {
     knows(parent, args, ctx, info) {
       const { knows = [] } = parent;
       return knows.map(id => ctx.db.findOne('people', { id }));
-    }
+    },
+    occupation: (parent, args, ctx, info) => ctx.db.findOne('occupation', { id: parent.occupation }),
+    occupations: (parent, args, ctx, info) => parent.occupations.map(id => ctx.db.findOne('occupation', { id }))
   },
   Show: {
     actors: getAllPeople('actors'),

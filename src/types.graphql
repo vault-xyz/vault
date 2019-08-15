@@ -16,6 +16,8 @@ type Query {
     shows: [Show!]
     game(id: ID!): VideoGame
     games: [VideoGame!]
+    occupation(id: ID!): Occupation
+    occupations: [Occupation!]
 }
 
 type Mutation {
@@ -34,13 +36,25 @@ type Thing{
     sameAs: ID
 }
 
-type QuantitativeValue {
+type Value {
     value: String
     minValue: Long
     maxValue: Long
 }
 
+type QuantitativeValue inherits Value {
+    unitCode: Long
+}
+
+type MonetaryAmount inherits Value {
+    currency: Text!
+}
+
 union Agent = Person | Organization
+
+type Occupation inherits Thing {
+    estimatedSalary : MonetaryAmount
+}
 
 type Person inherits Thing{
     birthPlace: Place
@@ -49,6 +63,8 @@ type Person inherits Thing{
     gender: String
     agent: Agent
     knows: [Person]
+    occupation: Occupation
+    occupations: [Occupation!]
 }
 
 type Place inherits Thing{
@@ -76,7 +92,6 @@ type Genre inherits Thing {
 }
 
 type Movie inherits Thing{
-    title: String!
     genre: Genre
     genres: [Genre]
     description: String
@@ -85,7 +100,6 @@ type Movie inherits Thing{
 }
 
 type Show inherits Thing{
-    title: String
     genre: Genre
     genres: [Genre]
     description: String
@@ -137,7 +151,6 @@ type Action inherits Thing{
 }
 
 type Game inherits Thing {
-    name: String!
     numberOfPlayers: QuantitativeValue
 }
 
@@ -148,7 +161,6 @@ enum GamePlayMode {
 }
 
 type VideoGameConsole inherits Thing {
-    name: String!
     releaseDate: Date
 }
 
