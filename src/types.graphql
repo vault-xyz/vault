@@ -1,0 +1,158 @@
+scalar Date
+scalar JSON
+scalar Long
+
+type Query {
+    hello(name: String): String
+    thing(id: ID!): Thing
+    things: [Thing!]
+    person(id: ID!): Person
+    people: [Person!]
+    place(id: ID!): Place
+    places: [Place!]
+    movie(id: ID!): Movie
+    movies(director: ID, directors: [ID!], actor: ID, actors: [ID!]): [Movie!]
+    show(id: ID!): Show
+    shows: [Show!]
+    game(id: ID!): VideoGame
+    games: [VideoGame!]
+}
+
+type Mutation {
+    deleteThing(id: ID!): Boolean
+    createPerson(data: JSON): Person
+    createMovie(data: JSON): Movie
+}
+
+type Thing{
+    id: ID!
+    description: String
+    disambiguatingDescription: String
+    name: String
+    alternateName: String
+    alternateNames: [String!]
+    sameAs: ID
+}
+
+type QuantitativeValue {
+    value: String
+    minValue: Long
+    maxValue: Long
+}
+
+union Agent = Person | Organization
+
+type Person inherits Thing{
+    birthPlace: Place
+    givenName: String
+    familyName: String
+    gender: String
+    agent: Agent
+    knows: [Person]
+}
+
+type Place inherits Thing{
+    address: String
+}
+
+type Organization inherits Thing{
+    alumni: [Person]
+    department: Organization
+}
+
+type Text inherits Thing {
+    value: String!
+}
+
+union Address = PostalAddress | Text
+
+type PostalAddress inherits Thing{
+    postalCode: String
+    streetAddress: Address
+}
+
+type Genre inherits Thing {
+    value: String!
+}
+
+type Movie inherits Thing{
+    title: String!
+    genre: Genre
+    genres: [Genre]
+    description: String
+    actors: [Person]
+    directors: [Person]
+}
+
+type Show inherits Thing{
+    title: String
+    genre: Genre
+    genres: [Genre]
+    description: String
+    episodes: [Episode!]
+    seasons: [Season!]
+    actors: [Person!]
+    directors: [Person!]
+    numberOfEpisodes: Long
+    numberOfSeasons: Long
+}
+
+type Season inherits Thing {
+    seasonNumber: Long
+    partOfShow: Show!
+    episodes: [Episode]
+}
+
+type Episode inherits Thing{
+    partOfShow: Show!
+    partOfSeason: Season
+    episodeNumber: Long
+    productionCompany: Organization
+}
+
+enum DayOfWeek{
+    Friday
+    Monday
+    PublicHolidays
+    Saturday
+    Sunday
+    Thursday
+    Tuesday
+    Wednesday
+}
+
+enum OrderStatus{
+    OrderCancelled
+    OrderDelivered
+    OrderInTransit
+    OrderPaymentDue
+    OrderPickupAvailable
+    OrderProblem
+    OrderProcessing
+    OrderReturned
+}
+
+type Action inherits Thing{
+    value: String!
+}
+
+type Game inherits Thing {
+    name: String!
+    numberOfPlayers: QuantitativeValue
+}
+
+enum GamePlayMode {
+    CoOp
+    MultiPlayer
+    SinglePlayer
+}
+
+type VideoGameConsole inherits Thing {
+    name: String!
+    releaseDate: Date
+}
+
+type VideoGame inherits Game {
+    playMode: [GamePlayMode!]
+    gamePlatform: [VideoGameConsole!]
+}
