@@ -18,12 +18,21 @@ type Query {
     games: [VideoGame!]
     occupation(id: ID!): Occupation
     occupations: [Occupation!]
+    book(id: ID!): Book
+    books: [Book!]
+    product(id: ID!): Product
+    products: [Product!]
+    audiobook(id: ID!): AudioBook
+    audiobooks: [AudioBook!]
+    country(id: ID!): Country
+    countries: [Country!]
 }
 
 type Mutation {
     deleteThing(id: ID!): Boolean
     createPerson(data: JSON): Person
     createMovie(data: JSON): Movie
+    updatePerson(id: ID!, data: JSON): Person
 }
 
 type Thing{
@@ -34,6 +43,23 @@ type Thing{
     alternateName: String
     alternateNames: [String!]
     sameAs: ID
+    node: JSON!
+}
+
+union OrgOrPerson = Person | Organization
+
+type CreativeWork inherits Thing {
+    creator: OrgOrPerson
+    # Indicates the primary entity described in some page or other CreativeWork.
+    mainEntity:	Thing
+    # The person or organization who produced the work (e.g. music album, movie, tv/radio series etc.).
+    producer: OrgOrPerson
+    # The service provider, service operator, or service performer; the goods producer.
+    # Another party (a seller) may offer those services or goods on behalf of the provider.
+    # A provider may also serve as the seller. Supersedes carrier.
+    provider: OrgOrPerson
+
+    isBasedOn: CreativeWork
 }
 
 type Value {
@@ -50,8 +76,6 @@ type MonetaryAmount inherits Value {
     currency: Text!
 }
 
-union Agent = Person | Organization
-
 type Occupation inherits Thing {
     estimatedSalary : MonetaryAmount
 }
@@ -61,14 +85,35 @@ type Person inherits Thing{
     givenName: String
     familyName: String
     gender: String
-    agent: Agent
-    knows: [Person]
+    agent: OrgOrPerson
+    knows: [Person!]
     occupation: Occupation
     occupations: [Occupation!]
+    parent: Person!
+    parents: [Person!]
+    child: Person!
+    children: [Person!]
+    sibling: Person
+    siblings: [Person!]
+    spouse: Person
+    spouses: [Person!]
+    birthDate: Date
+    # Nationality of the person.
+    nationality: Country
 }
 
 type Place inherits Thing{
     address: String
+    containedInPlace: Place
+    containsPlace: Place
+    telephone: Text
+}
+
+type Country inherits Place {
+    address: String
+    containedInPlace: Place
+    containsPlace: Place
+    telephone: Text
 }
 
 type Organization inherits Thing{
@@ -91,7 +136,7 @@ type Genre inherits Thing {
     value: String!
 }
 
-type Movie inherits Thing{
+type Movie inherits CreativeWork{
     genre: Genre
     genres: [Genre]
     description: String
@@ -99,27 +144,27 @@ type Movie inherits Thing{
     directors: [Person]
 }
 
-type Show inherits Thing{
+type Show inherits CreativeWork{
     genre: Genre
     genres: [Genre]
     description: String
     episodes: [Episode!]
-    seasons: [Season!]
-    actors: [Person!]
+    seasons: [CreativeWorkSeason!]
+    actors: [CreativeWorkSeason!]
     directors: [Person!]
     numberOfEpisodes: Long
     numberOfSeasons: Long
 }
 
-type Season inherits Thing {
-    seasonNumber: Long
+type CreativeWorkSeason inherits CreativeWork {
     partOfShow: Show!
     episodes: [Episode]
+    seasonNumber: Long
 }
 
-type Episode inherits Thing{
+type Episode inherits CreativeWork{
     partOfShow: Show!
-    partOfSeason: Season
+    partOfSeason: CreativeWorkSeason
     episodeNumber: Long
     productionCompany: Organization
 }
@@ -150,7 +195,7 @@ type Action inherits Thing{
     value: String!
 }
 
-type Game inherits Thing {
+type Game inherits CreativeWork {
     numberOfPlayers: QuantitativeValue
 }
 
@@ -167,4 +212,40 @@ type VideoGameConsole inherits Thing {
 type VideoGame inherits Game {
     playMode: [GamePlayMode!]
     gamePlatform: [VideoGameConsole!]
+}
+
+# The publication format of the book.
+enum BookFormat {
+    AudiobookFormat
+    EBook
+    GraphicNovel
+    Hardcover
+    Paperback
+}
+
+type Book inherits CreativeWork {
+    # Indicates whether the book is an abridged edition.
+    abridged: Boolean
+    # The edition of the book.
+    bookEdition: Text
+    # The format of the book.
+    bookFormat: BookFormat
+    # The illustrator of the book.
+    illustrator: Person
+    # The ISBN of the book.
+    isbn: Text
+    # The number of pages in the book.
+    numberOfPages: Int
+}
+
+type AudioBook inherits Book {
+    # The duration of the item (movie, audio recording, event, etc.) in ISO 8601 date format.
+    # duration: Duration
+    # A person who reads (performs) the audiobook.
+    readBy: Person
+}
+
+type Product inherits Thing {
+    # The Stock Keeping Unit (SKU), i.e. a merchant-specific identifier for a product or service, or the product to which the offer refers.
+    sku: Text
 }

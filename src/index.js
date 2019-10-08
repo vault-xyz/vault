@@ -5,15 +5,17 @@ const { transpileSchema } = require('graphql-s2s').graphqls2s;
 const { formatError } = require('apollo-errors');
 const GraphQLJSON = require('graphql-type-json');
 const GraphQLLong = require('graphql-type-long');
-const { GraphQLDate } = require('graphql-iso-date');
+const { GraphQLDateTime } = require('graphql-iso-date');
 const Database = require('somewhere');
-const { createError } = require('apollo-errors');
+const fromEntries = require('fromentries');
 const typeDefs = fs.readFileSync(path.join(__dirname, './types.graphql'), 'utf8');
 const genMockData = require('./gen-mock-data');
+const AppError = require('./errors/app-error');
 
-const AppError = createError('AppError', {
-  message: 'Internal application error'
-});
+const log = console;
+if (process.env.NODE_ENV !== 'development') {
+  log.debug = () => {};
+}
 
 const createThing = ({
   type,
@@ -34,17 +36,18 @@ const createThing = ({
   };
 };
 
-const __resolveType = (obj, ctx, info) => obj['@type'];
+const __resolveType = (obj, ctx, info) => {
+  return obj['@type'];
+};
 
 const getAllPeople = field => (parent, args, ctx, info) => parent[field].map(id => ctx.db.findOne('people', { id }));
 
 const resolvers = {
   Query: {
     hello: (_, args) => `Hello ${args.name || 'World'}!`,
-    thing: (parent, { id }, ctx, info) => [],
-    things(parent, args, ctx, info) {
+    thing: (parent, { id }, ctx, info) => {
       const collections = Object.keys(ctx.db.database);
-      const results = collections
+      const things = collections
         .map(collection => ctx.db.find(collection, {}))
         .reduce((previousValue, currentValue) => {
           return [
@@ -53,7 +56,68 @@ const resolvers = {
           ];
         }, []);
 
-      return results;
+
+      const thing = things.find(thing => thing.id === id);
+      if (thing) {
+        const {
+          id,
+          description,
+          disambiguatingDescription,
+          name,
+          alternateName,
+          alternateNames,
+          sameAs,
+          ...rest
+        } = thing;
+
+        return {
+          id,
+          description,
+          disambiguatingDescription,
+          name,
+          alternateName,
+          alternateNames,
+          sameAs,
+          node: thing
+        };
+      }
+    },
+    things(parent, args, ctx, info) {
+      const collections = Object.keys(ctx.db.database);
+      const things = collections
+        .map(collection => ctx.db.find(collection, {}))
+        .reduce((previousValue, currentValue) => {
+          return [
+            ...previousValue,
+            ...currentValue
+          ];
+        }, []);
+
+      return things.map(thing => {
+        if (thing) {
+          const {
+            id,
+            description,
+            disambiguatingDescription,
+            name,
+            alternateName,
+            alternateNames,
+            sameAs,
+            ...rest
+          } = thing;
+
+          return {
+            id,
+            description,
+            disambiguatingDescription,
+            name,
+            alternateName,
+            alternateNames,
+            sameAs,
+            node: thing
+          };
+        }
+      });
     },
     person(parent, { id }, ctx, info) {
       const person = ctx.db.findOne('people', { id });
@@ -101,38 +165,74 @@ const resolvers = {
     games(parent, args, ctx, info) {
       return ctx.db.find('games', {});
     },
+    country(parent, { id }, ctx, info) {
+      return ctx.db.findOne('countries', { id });
+    },
+    countries(parent, args, ctx, info) {
+      return ctx.db.find('countries', {});
+    }
   },
   Mutation: {
     deleteThing: (parent, { id }, ctx, info) => ctx.db.delete(id),
     createPerson: (parent, { data }, ctx, info) => createThing({ type: 'Person', data, ctx }),
     createMovie: (parent, { data }, ctx, info) => createThing({ type: 'Movie', data, ctx }),
+    updatePerson: (parent, { id, data }, ctx, info) => {
+      const person = ctx.db.findOne('people', { id });
+
+      if (!person) {
+        throw new Error(`Couldn't find person with id ${id}`);
+      }
+
+      const updatedPerson = ctx.db.update('people', id, {
+        ...fromEntries(Object.entries(person).map(([ key, value ]) => {
+          const dataValue = data[key];
+          return [key, dataValue !== undefined ? dataValue : value];
+        }))
+      });
+
+      return updatedPerson;
+    },
   },
   Thing: {
     __resolveType
   },
   Movie: {
     actors: getAllPeople('actors'),
-    directors(parent, args, ctx, info) {
-      const { directors = [] } = parent;
+    directors({ directors = [] }, args, ctx, info) {
       return directors.map(id => ctx.db.findOne('people', { id }));
     }
   },
   Person: {
-    knows(parent, args, ctx, info) {
-      const { knows = [] } = parent;
-      return knows.map(id => ctx.db.findOne('people', { id }));
+    name({ familyName, givenName }, args, ctx, info) {
+      return `${givenName} ${familyName}`;
     },
-    occupation: (parent, args, ctx, info) => ctx.db.findOne('occupation', { id: parent.occupation }),
-    occupations: (parent, args, ctx, info) => parent.occupations.map(id => ctx.db.findOne('occupation', { id }))
+    knows({ knows = [], parents = [], children = [] }, args, ctx, info) {
+      return [...knows, ...parents, ...children].map(id => {
+        const person = ctx.db.findOne('people', { id });
+        log.debug(`looking for ${id} in "people", found ${JSON.stringify(person, null, 2)}`);
+        return person;
+      });
+    },
+    occupation: ({ occupations = [] }, args, ctx, info) => ctx.db.findOne('occupation', { id: occupations[0] }),
+    occupations: ({ occupations = [] }, args, ctx, info) => occupations.map(id => ctx.db.findOne('occupation', { id })),
+    parent: ({ parents = [] }, args, ctx, info) => ctx.db.findOne('people', { id: parents[0] }),
+    parents: ({ parents = [] }, args, ctx, info) => parents.map(id => ctx.db.findOne('people', { id })),
+    child: ({ children = [] }, args, ctx, info) => ctx.db.findOne('people', { id: children[0] }),
+    children: ({ children = [] }, args, ctx, info) => children.map(id => ctx.db.findOne('people', { id })),
+    sibling: ({ siblings = [] }, args, ctx, info) => ctx.db.findOne('people', { id: siblings[0] }),
+    siblings: ({ siblings = [] }, args, ctx, info) => siblings.map(id => ctx.db.findOne('people', { id })),
+    spouse: ({ spouses = [] }, args, ctx, info) => ctx.db.findOne('people', { id: spouses[0] }),
+    spouses: ({ spouses = [] }, args, ctx, info) => spouses.map(id => ctx.db.findOne('people', { id })),
+    nationality: ({ nationality = [] }, args, ctx, info) => ctx.db.findOne('countries', { id: nationality })
   },
   Show: {
     actors: getAllPeople('actors'),
     directors: getAllPeople('directors'),
-    episodes: (parent, args, ctx, info) => parent.episodes.map(id => ctx.db.findOne('episodes', { id })),
-    seasons: (parent, args, ctx, info) => parent.seasons.map(id => ctx.db.findOne('seasons', { id }))
+    episodes: (parent, args, ctx, info) => (parent.episodes || []).map(id => ctx.db.findOne('episodes', { id })),
+    seasons: (parent, args, ctx, info) => (parent.seasons || []).map(id => ctx.db.findOne('seasons', { id }))
   },
-  Season: {
-    episodes: (parent, args, ctx, info) => parent.episodes.map(id => ctx.db.findOne('episodes', { id })),
+  CreativeWorkSeason: {
+    episodes: (parent, args, ctx, info) => (parent.episodes || []).map(id => ctx.db.findOne('episodes', { id })),
   },
   Episode: {
     partOfSeason: (parent, args, ctx, info) => ctx.db.findOne('seasons', { id: parent.partOfSeason })
@@ -140,23 +240,20 @@ const resolvers = {
   VideoGame: {
     gamePlatform: (parent, args, ctx, info) => parent.gamePlatform.map(id => ctx.db.findOne('consoles', { id }))
   },
-  Agent: {
+  OrgOrPerson: {
     __resolveType
   },
   Address: {
     __resolveType
   },
-  Date: GraphQLDate,
+  Date: GraphQLDateTime,
   JSON: GraphQLJSON,
   Long: GraphQLLong
 };
 
-const db = new Database('./db.json');
+const db = new Database('../db.json');
 if (process.env.NODE_ENV !== 'production') {
-  console.debug('Generating mock data...');
-  console.debug('Clearing db...');
   genMockData(db);
-  console.debug('Mock data added to the db!');
 }
 
 const options = {
@@ -173,4 +270,4 @@ const server = new GraphQLServer({
     };
   }
 })
-server.start(options, () => console.log(`Server is running at http://localhost:4000`))
+server.start(options, () => log.info(`Server is running at http://localhost:4000`))
