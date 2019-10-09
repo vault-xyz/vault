@@ -1,0 +1,15 @@
+type Query {
+    thing(id: ID!): Thing
+    things: [Thing!]
+}
+
+type Thing {
+    id: ID!
+    description: String
+    disambiguatingDescription: String
+    name: String
+    alternateName: String
+    alternateNames: [String!]
+    sameAs: ID
+    node: JSON!
+}

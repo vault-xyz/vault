@@ -1,0 +1,18 @@
+type Query {
+    movie(id: ID!): Movie
+    movies(director: ID, directors: [ID!], actor: ID, actors: [ID!]): [Movie!]
+}
+
+type Mutation {
+    deleteMovie(id: ID!): Boolean
+    createMovie(data: JSON): Movie
+    updateMovie(id: ID!, data: JSON): Movie
+}
+
+type Movie inherits CreativeWork{
+    genre: Genre
+    genres: [Genre]
+    description: String
+    actors: [Person]
+    directors: [Person]
+}

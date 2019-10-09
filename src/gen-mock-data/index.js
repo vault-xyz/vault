@@ -1,7 +1,8 @@
 const fs = require('fs');
 const chalk = require('chalk').default;
 const TVDB = require('node-tvdb');
-const AppError = require('./errors/app-error');
+const AppError = require('../errors/app-error');
+const countries = require('./countries');
 
 const log = {
     debug: console.debug,
@@ -24,10 +25,12 @@ const genMockData = db => {
     }
 
     const dataToGen = {
-        personAndMovie: true,
+        personAndMovie: false,
         personShowAndEpisode: false,
         addPerson: true,
-        videoGame: false
+        videoGame: false,
+        addCountry: true,
+        addOccupations: true
     };
 
     log.debug('Generating mock data...');
@@ -191,10 +194,48 @@ const genMockData = db => {
         return person;
     };
 
+    // Occupations
+    if (dataToGen.addOccupations) {
+        const occupations = [{
+            name: 'Actor'
+        }, {
+            name: 'Barista'
+        }, {
+            name: 'Chef'
+        }, {
+            name: 'Drug dealer'
+        }, {
+            name: 'Programmer'
+        }];
+
+        occupations.forEach(occupation => {
+            findOrCreate('occupations', {
+                '@type': 'Occupation',
+                name: occupation.name
+            }, {
+                ...occupation
+            });
+        });
+    }
+
+    // Countries
+    if (dataToGen.addCountry) {
+        countries.forEach(country => {
+            findOrCreate('countries', {
+                '@type': 'Country',
+                name: country.name
+            }, {
+                ...country
+            });
+        });
+    }
+
+    // People
     if (dataToGen.addPerson) {
         addPerson({
             familyName: 'Tyler',
             givenName: 'Alexis',
+            gender: 'Female',
             nationality: {
                 name: 'Australia'
             },

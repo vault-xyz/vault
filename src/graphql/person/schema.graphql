@@ -1,0 +1,83 @@
+scalar Date
+scalar JSON
+scalar Long
+
+type Query {
+    person(id: ID!): Person
+    people: [Person!]
+}
+
+type Mutation {
+    deletePerson(id: ID!): Boolean
+    createPerson(data: JSON): Person
+    updatePerson(id: ID!, data: JSON): Person
+}
+
+enum Gender {
+    Agender
+    Androgyne
+    Androgynous
+    Bigender
+    Cis
+    Cisgender
+    Cis_Female
+    Cis_Male
+    Cis_Man
+    Cis_Woman
+    Cisgender_Female
+    Cisgender_Male
+    Cisgender_Man
+    Cisgender_Woman
+    Female_to_Male
+    FTM
+    Gender_Fluid
+    Gender_Nonconforming
+    Gender_Questioning
+    Gender_Variant
+    Genderqueer
+    Intersex
+    Male_to_Female
+    MTF
+    Neither
+    Neutrois
+    Non_binary
+    Other
+    Pangender
+    Trans
+    Trans_Female
+    Trans_Male
+    Trans_Man
+    Trans_Person
+    Trans_Woman
+    Transfeminine
+    Transgender
+    Transgender_Female
+    Transgender_Male
+    Transgender_Man
+    Transgender_Person
+    Transgender_Woman
+    Transmasculine
+}
+
+type Person inherits Thing{
+    birthPlace: Place
+    givenName: String
+    familyName: String
+    gender: Gender
+    agent: OrgOrPerson
+    knows: [Person!]
+    occupation: Occupation
+    occupations: [Occupation!]
+    parent: Person!
+    parents: [Person!]
+    child: Person!
+    children: [Person!]
+    sibling: Person
+    siblings: [Person!]
+    spouse: Person
+    spouses: [Person!]
+    birthDate: Date
+    telephone: Text
+    # Nationality of the person.
+    nationality: Country
+}
