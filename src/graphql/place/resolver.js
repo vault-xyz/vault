@@ -2,11 +2,11 @@ const { createThing } = require('../../helpers');
 
 const resolver = {
     Query: {
-        place(parent, { id }, ctx, info) {
-            return ctx.db.findOne('places', { id });
+        place(parent, { id: _id }, ctx, info) {
+            return ctx.db.findOne('places', { _id });
         },
-        places(parent, args, ctx, info) {
-            return ctx.db.find('places', {});
+        places(parent, { limit, skip }, ctx, info) {
+            return ctx.db.find('places', {}, { limit, skip });
         }
     },
     Mutation: {

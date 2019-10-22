@@ -1,6 +1,12 @@
 type Query {
     thing(id: ID!): Thing
-    things: [Thing!]
+    things(limit: Int, skip: Int): [Thing!]
+}
+
+type Mutation {
+    deleteThing(id: ID!): Boolean
+    createThing(data: JSON): Thing
+    updateThing(id: ID!, data: JSON): Thing
 }
 
 type Thing {

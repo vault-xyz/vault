@@ -1,0 +1,61 @@
+scalar Date
+scalar JSON
+scalar Long
+
+type Query {
+    hello(name: String): String
+}
+
+# type Mutation {
+# }
+
+union Address = PostalAddress | Text	
+
+type PostalAddress inherits Thing{	
+    postalCode: String	
+    streetAddress: Address	
+}
+
+union OrgOrPerson = Person | Organization
+
+type Value {
+    value: String
+    minValue: Long
+    maxValue: Long
+}
+
+type QuantitativeValue inherits Value {
+    unitCode: Long
+}
+
+type MonetaryAmount inherits Value {
+    currency: Text!
+}
+
+type Text {
+    value: String!
+}
+
+type Action inherits Thing{
+    value: String!
+}
+
+type CreativeWork inherits Thing {
+    creator: OrgOrPerson
+    # Indicates the primary entity described in some page or other CreativeWork.
+    mainEntity:	Thing
+    # The person or organization who produced the work (e.g. music album, movie, tv/radio series etc.).
+    producer: OrgOrPerson
+    # The service provider, service operator, or service performer; the goods producer.
+    # Another party (a seller) may offer those services or goods on behalf of the provider.
+    # A provider may also serve as the seller. Supersedes carrier.
+    provider: OrgOrPerson
+
+    isBasedOn: CreativeWork
+
+    publisher: OrgOrPerson
+}
+
+type Genre inherits Thing {	
+    value: String!	
+}	

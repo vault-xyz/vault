@@ -1,22 +1,28 @@
+const { addListener, mainStory } = require('storyboard');
+const wsServerListener = require('storyboard-listener-ws-server').default;
 const fromEntries = require('fromentries');
+const Txi = require('txi');
+
+// Sets storyboard preset
+require('storyboard-preset-console');
+
+const isAuthorized = (login, password) => {
+    return login === 'admin' && password === 'admin';
+}
+
+addListener(wsServerListener, {
+    authenticate: ({ login, password }) => isAuthorized(login, password),
+});
 
 const createThing = ({
     type,
     data,
     ctx
 }) => {
-    const id = (new Date()).getTime();
-
-    ctx.db.set(id, {
-        id,
+    return ctx.db.create({
         ...data,
         '@type': type
     });
-
-    return {
-        ...data,
-        id
-    };
 };
 
 const updateThing = ({
@@ -40,15 +46,18 @@ const __resolveType = (obj, ctx, info) => {
 
 const getAllPeople = field => (parent, args, ctx, info) => parent[field].map(id => ctx.db.findOne('people', { id }));
 
-const log = console;
-if (process.env.NODE_ENV !== 'development') {
-  log.debug = () => {};
-}
+const log = mainStory;
+// if (process.env.NODE_ENV !== 'development') {
+//   log.debug = () => {};
+// }
+
+const txi = new Txi();
 
 module.exports = {
     createThing,
     __resolveType,
     getAllPeople,
     updateThing,
-    log
+    log,
+    txi
 };

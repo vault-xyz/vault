@@ -1,34 +1,35 @@
 const fs = require('fs');
 const chalk = require('chalk').default;
 const TVDB = require('node-tvdb');
+const { map, forEach } = require('p-iteration');
 const AppError = require('../errors/app-error');
+const helpers = require('../helpers');
 const countries = require('./countries');
 
-const log = {
-    debug: console.debug,
-    info: console.info,
-    error: console.error
-};
-
-const genMockData = db => {
+const genMockData = async db => {
     if (!db) {
-        throw new AppError('Missing db param!');
+        throw new AppError({
+            message: 'Missing db param!'
+        });
     }
 
-    if (process.env.CLEAR_DB) {
-        log.debug('Clearing db...');
-        db.clear();
-    }
+    const log = helpers.log.child({
+        src: 'genMockData',
+        title: 'Generating mock data!',
+        level: 'DEBUG'
+    });
 
     if (!process.env.NODE_ENV) {
+        log.debug('Skipping as no NODE_ENV is set.')
+        log.close();
         return;
     }
 
     const dataToGen = {
-        personAndMovie: false,
-        personShowAndEpisode: false,
         addPerson: true,
-        videoGame: false,
+        personAndMovie: true,
+        personShowAndEpisode: true,
+        videoGame: true,
         addCountry: true,
         addOccupations: true
     };
@@ -53,37 +54,82 @@ const genMockData = db => {
 
     /**
      * Find or create thing and return ID.
-     * @param {string} database Database to use.
-     * @param {object} searchCriteria e.g. `{ id: 'eee2051f-bd0a-4dfe-bbdd-3578a57ef1bc' }`
+     * @param {string} collection Collection to use.
+     * @param {object} searchCriteria e.g. `{ _id: 'eee2051f-bd0a-4dfe-bbdd-3578a57ef1bc' }`
      * @param {object} [updateData = {}] e.g. `{ additionalName: 'John' }`
      */
-    const findOrCreate = (database, searchCriteria, updateData = {}) => {
+    const findOrCreate = async (collection, searchCriteria, updateData = {}) => {
+        const log = helpers.log.child({
+            src: 'findOrCreate',
+            title: `Looking for ${JSON.stringify(searchCriteria)}`,
+            level: 'DEBUG'
+        });
+
         // Find things based on searchCriteria
-        const foundThings = db.find(database, {
+        const foundThings = await db.find(collection, {
             ...searchCriteria
         });
 
         if (foundThings.length > 1) {
-            log.debug(searchCriteria, foundThings);
-            throw new AppError('Found multiple things for that query!');
+            throw new AppError({
+                message: 'Found multiple things for that query!',
+                data: {
+                    things: foundThings
+                }
+            });
         }
 
         const foundThing = foundThings[0];
 
         // If we found an existing one return ID.
         if (foundThing) {
-            log.debug(`Returning ${chalk.green('EXISTING')} ${foundThing.id} from ${database}`);
+            log.debug('findOrCreate', `Returning ${chalk.green('EXISTING')} ${foundThing._id} from ${collection}`, {
+                attach: foundThing
+            });
             return foundThing;
         }
 
         // Create a new thing
-        const newThing = db.save(database, {
+        const newThing = await db.create(collection, {
             ...searchCriteria,
             ...updateData
+        }).catch(error => {
+            log.error('findOrCreate', error.message, {
+                attach: error
+            });
+            log.close();
         });
 
-        log.debug(`Returning ${chalk.yellow('NEW')} ${newThing.id} from ${database}`);
+        log.debug('findOrCreate', `Returning ${chalk.yellow('NEW')} ${newThing._id} from ${collection}`, {
+            attach: newThing
+        });
+        log.close();
+
         return newThing;
+    };
+
+    const findOrCreateAndReturnId = (people, type) => map(people, person => {
+        log.debug(`Adding ${type} ${typeof person === 'string' ? person : (person.givenName + ' ' + person.familyName)}`);
+
+        return findOrCreate('people', {
+            '@type': 'Person',
+            ...person
+        }).then(item => item._id);
+    });
+
+    const updateRelationship = async (person, people, field, relationship) => {
+        await forEach(people, async _id => {
+            const other = await db.findOne('people', { _id });
+
+            log.debug(`Updating ${relationship} ${other.givenName} adding ${person.givenName} as ${field}`);
+            await db.update('people', other._id, {
+                ...other,
+                [field]: [
+                    ...(Object.keys(other).includes(field) ? other[field] : []),
+                    person._id
+                ]
+            });
+        });
     };
 
     /**
@@ -113,7 +159,7 @@ const genMockData = db => {
      * 
      * @param {Person} person
      */
-    const addPerson = ({
+    const addPerson = async ({
         familyName,
         givenName,
         additionalName,
@@ -124,51 +170,27 @@ const genMockData = db => {
         nationality,
         birthDate
     }) => {
-        log.debug();
-        log.debug('------------------------------------------------');
         const haveParents = parents.length >= 1;
         const haveChildren = children.length >= 1;
         log.debug(`Adding user ${givenName} ${familyName}${(haveParents || haveChildren) ? ' with ' : ''}${haveParents ? 'parents' : ''}${(haveParents && haveChildren) ? ' and ' : ''}${haveChildren ? 'children' : ''}`);
 
-        const findOrCreateAndReturnId = (people, type) => people.map(person => {
-            log.debug(`Adding ${type} ${typeof person === 'string' ? person : (person.givenName + ' ' + person.familyName)}`);
-            return findOrCreate('people', {
-                '@type': 'Person',
-                ...person
-            }).id;
-        });
-
-        const updateRelationship = (person, people, field, relationship) => {
-            people.forEach(id => {
-                const other = db.findOne('people', { id });
-
-                log.debug(`Updating ${relationship} ${other.givenName} adding ${person.givenName} as ${field}`);
-                db.update('people', other.id, {
-                    [field]: [
-                        ...(Object.keys(other).includes(field) ? other[field] : []),
-                        person.id
-                    ]
-                });
-            });
-        };
-
         // Resolve all objects to ID strings
-        parents = findOrCreateAndReturnId(parents, 'parent');
-        children = findOrCreateAndReturnId(children, 'child');
-        spouses = findOrCreateAndReturnId(spouses, 'spouse');
-        siblings = findOrCreateAndReturnId(siblings, 'sibling');
+        parents = await findOrCreateAndReturnId(parents, 'parent');
+        children = await findOrCreateAndReturnId(children, 'child');
+        spouses = await findOrCreateAndReturnId(spouses, 'spouse');
+        siblings = await findOrCreateAndReturnId(siblings, 'sibling');
 
         // Resolve object to ID string
         if (nationality) {
-            nationality = findOrCreate('countries', {
+            nationality = await findOrCreate('countries', {
                 '@type': 'Country',
                 name: typeof nationality === 'string' ? nationality : (nationality && nationality.name)
-            }).id;
+            }).then(item => item._id);
         }
 
         // Search for person via familyName, additionalName and givenName.
         // When found update rest of details.
-        const person = findOrCreate('people', {
+        const person = await findOrCreate('people', {
             '@type': 'Person',
             familyName,
             givenName
@@ -183,13 +205,10 @@ const genMockData = db => {
         });
 
         // Update the other end of the relationship
-        updateRelationship(person, parents, 'children', 'parent');
-        updateRelationship(person, children, 'parents', 'child');
-        updateRelationship(person, spouses, 'spouses', 'spouse');
-        updateRelationship(person, siblings, 'siblings', 'sibling');
-
-        log.debug('------------------------------------------------');
-        log.debug();
+        await updateRelationship(person, parents, 'children', 'parent');
+        await updateRelationship(person, children, 'parents', 'child');
+        await updateRelationship(person, spouses, 'spouses', 'spouse');
+        await updateRelationship(person, siblings, 'siblings', 'sibling');
 
         return person;
     };
@@ -208,8 +227,8 @@ const genMockData = db => {
             name: 'Programmer'
         }];
 
-        occupations.forEach(occupation => {
-            findOrCreate('occupations', {
+        await forEach(occupations, async occupation => {
+            await findOrCreate('occupations', {
                 '@type': 'Occupation',
                 name: occupation.name
             }, {
@@ -220,8 +239,8 @@ const genMockData = db => {
 
     // Countries
     if (dataToGen.addCountry) {
-        countries.forEach(country => {
-            findOrCreate('countries', {
+        await forEach(countries, async country => {
+            await findOrCreate('countries', {
                 '@type': 'Country',
                 name: country.name
             }, {
@@ -232,10 +251,10 @@ const genMockData = db => {
 
     // People
     if (dataToGen.addPerson) {
-        addPerson({
+        await addPerson({
             familyName: 'Tyler',
             givenName: 'Alexis',
-            gender: 'Female',
+            // gender: 'Female',
             nationality: {
                 name: 'Australia'
             },
@@ -284,7 +303,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'Bridger',
             givenName: 'Lisa',
             birthDate: createTimestamp({
@@ -350,7 +369,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'Biar',
             givenName: 'Nicholas',
             parents: [{
@@ -366,7 +385,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'English',
             givenName: 'Mark',
             children: [{
@@ -388,7 +407,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'English',
             givenName: 'Lisa',
             spouses: [{
@@ -404,7 +423,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'English',
             givenName: 'Rachael',
             spouses: [{
@@ -418,9 +437,9 @@ const genMockData = db => {
                 familyName: 'Harrington',
                 givenName: 'Koby'
             }]
-        })
+        });
 
-        addPerson({
+        await addPerson({
             familyName: 'White',
             givenName: 'Lesley',
             children: [{
@@ -435,7 +454,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'Sporn',
             givenName: 'Melony',
             children: [{
@@ -444,7 +463,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'Fry',
             additionalName: 'Lesley',
             givenName: 'Edward',
@@ -461,7 +480,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'Boddey',
             givenName: 'Steven',
             spouses: [{
@@ -480,7 +499,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'Andrews',
             givenName: 'Cindy',
             spouses: [{
@@ -500,7 +519,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'Grey',
             givenName: 'Frea',
             spouses: [{
@@ -509,7 +528,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'Bridger',
             givenName: 'Alan',
             siblings: [{
@@ -518,7 +537,7 @@ const genMockData = db => {
             }]
         });
 
-        addPerson({
+        await addPerson({
             familyName: 'Grey',
             givenName: 'Frea',
             parents: [{
@@ -533,16 +552,16 @@ const genMockData = db => {
 
     // Person + Movie
     if (dataToGen.personAndMovie) {
-        const johnMcTiernan = addPerson({
+        const johnMcTiernan = await addPerson({
             familyName: 'McTiernan',
             givenName: 'John'
         });
 
-        db.save('movies', {
+        await db.create('movies', {
             '@type': 'Movie',
             name: 'Die Hard',
             genre: 'Action',
-            directors: [johnMcTiernan.id],
+            directors: [johnMcTiernan._id],
             actors: [],
             // Taken from tvdb
             description: `John McClane, officer of the NYPD, tries to save wife Holly Gennaro and several others, taken hostage by German terrorist Hans Gruber during a Christmas party at the Nakatomi Plaza in Los Angeles.`
@@ -551,58 +570,58 @@ const genMockData = db => {
 
     // Person + Show + Episode
     if (dataToGen.personShowAndEpisode) {
-        const danCastellaneta = addPerson({
+        const danCastellaneta = await addPerson({
             familyName: 'Castellaneta',
             givenName: 'Dan'
         });
 
-        const theSimpsons = db.save('shows', {
+        const theSimpsons = await db.create('shows', {
             '@type': 'Show',
             name: 'The Simpsons',
             genre: 'Comedy (Animation)',
             directors: [],
-            actors: [danCastellaneta.id],
+            actors: [danCastellaneta._id],
             // Taken from tvdb
             description: `Set in Springfield, the average American town, the show focuses on the antics and everyday adventures of the Simpson family; Homer, Marge, Bart, Lisa and Maggie, as well as a virtual cast of thousands. Since the beginning, the series has been a pop culture icon, attracting hundreds of celebrities to guest star. The show has also made name for itself in its fearless satirical take on politics, media and American life in general.`
         });
 
-        const seasonOne = db.save('seasons', {
-            '@type': 'Season',
+        const seasonOne = await db.create('creative-work-seasons', {
+            '@type': 'CreativeWorkSeason',
             seasonNumber: 1,
-            partOfShow: theSimpsons.id
+            partOfShow: theSimpsons._id
         });
 
-        const episodeOne = db.save('episodes', {
+        const episodeOne = await db.create('episodes', {
             '@type': 'Episode',
             name: 'Simpsons Roasting on an Open Fire',
             episodeNumber: 1,
-            partOfShow: theSimpsons.id,
-            partOfSeason: seasonOne.id,
+            partOfShow: theSimpsons._id,
+            partOfSeason: seasonOne._id,
             // Taken from tvdb
             description: `When his Christmas bonus is cancelled, Homer becomes a department-store Santa--and then bets his meager earnings at the track. When all seems lost, Homer and Bart save Christmas by adopting the losing greyhound, Santa's Little Helper.`
         });
 
         // Add episodeOne to the season
-        db.update('seasons', seasonOne.id, {
-            episodes: [episodeOne.id]
+        await db.update('creative-work-seasons', seasonOne._id, {
+            episodes: [episodeOne._id]
         });
 
         // Add seasonOne and epsiodeOne to the show
-        db.update('shows', theSimpsons.id, {
-            episodes: [episodeOne.id],
-            seasons: [seasonOne.id]
+        await db.update('shows', theSimpsons._id, {
+            episodes: [episodeOne._id],
+            seasons: [seasonOne._id]
         });
     }
 
     // VideoGame
     if (dataToGen.videoGame) {
-        const xboxOne = db.save('consoles', {
+        const xboxOne = await db.create('consoles', {
             '@type': 'VideoGameConsole',
             name: 'Xbox One',
             releaseDate: new Date('November 22, 2013')
         });
 
-        const farCry4 = db.save('games', {
+        const farCry4 = await db.create('games', {
             '@type': 'VideoGame',
             name: 'Far Cry 4',
             playMode: ['CoOp', 'MultiPlayer', 'SinglePlayer'],
@@ -610,7 +629,7 @@ const genMockData = db => {
                 minValue: 1,
                 maxValue: 2
             },
-            gamePlatform: [xboxOne.id]
+            gamePlatform: [xboxOne._id]
         });
     }
 
@@ -628,11 +647,11 @@ const genMockData = db => {
             const file = fs.readFileSync('../scene_exceptions_tvdb.json', 'utf8');
             exceptions = JSON.parse(file).tvdb;
         } catch (error){
-            log.error(error);
+            log.error(error.message);
         }
 
         // @ts-ignore
-        Object.entries(exceptions).forEach(async ([id, exceptions]) => {
+        await forEach(Object.entries(exceptions), async ([id, exceptions]) => {
             log.info(`${id}: START`)
             const show = await tvdb.getSeriesById(id)
                 .then(response => {
@@ -643,7 +662,7 @@ const genMockData = db => {
                     log.info(`${id}: ERROR \nMesssage: ${error.message}`)
                 });
 
-            db.save('shows', {
+            await db.create('shows', {
                 '@type': 'Show',
                 name: show.seriesName,
                 genres: show.genre,
@@ -653,6 +672,7 @@ const genMockData = db => {
     }
 
     log.debug('Mock data added to the db!');
+    log.close();
 };
 
 module.exports = genMockData;

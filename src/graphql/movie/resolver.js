@@ -2,11 +2,11 @@ const { createThing, getAllPeople } = require('../../helpers');
 
 const resolver = {
     Query: {
-        movie(parent, { id }, ctx, info) {
-            return ctx.db.findOne('movies', { id });
+        movie(parent, { id: _id }, ctx, info) {
+            return ctx.db.findOne('movies', { _id });
         },
-        movies(parent, { director, directors, actor, actors }, ctx, info) {
-            const movies = ctx.db.find('movies', {});
+        movies(parent, { director, directors, actor, actors, limit, skip }, ctx, info) {
+            const movies = ctx.db.find('movies', {}, { limit, skip });
 
             const hasAll = field => itemsToCheck => {
                 // Ensure the movie has all the ids in the field

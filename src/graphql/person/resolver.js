@@ -4,24 +4,24 @@ const AppError = require('../../errors/app-error');
 
 const resolver = {
     Query: {
-        person(parent, { id }, ctx, info) {
-            const person = ctx.db.findOne('people', { id });
+        person(parent, { id: _id }, ctx, info) {
+            const person = ctx.db.findOne('people', { _id });
 
-            if (!person.id) {
+            if (!person._id) {
                 throw new AppError('Not found!');
             }
 
             return person;
         },
-        people(parent, args, ctx, info) {
-            return ctx.db.find('people', {});
+        people(parent, { limit, skip, random }, ctx, info) {
+            return ctx.db.find('people', {}, { limit, skip, random });
         }
     },
     Mutation: {
         deletePerson: (parent, { id }, ctx, info) => ctx.db.delete(id),
         createPerson: (parent, { data }, ctx, info) => createThing({ type: 'Person', data, ctx }),
         updatePerson: (parent, { id, data }, ctx, info) => {
-            const person = ctx.db.findOne('people', { id });
+            const person = ctx.db.findOne('people', { _id });
 
             if (!person) {
                 throw new Error(`Couldn't find person with id ${id}`);
@@ -43,7 +43,7 @@ const resolver = {
         },
         knows({ knows = [], parents = [], children = [] }, args, ctx, info) {
             return [...knows, ...parents, ...children].map(id => {
-                const person = ctx.db.findOne('people', { id });
+                const person = ctx.db.findOne('people', { _id });
                 log.debug(`looking for ${id} in "people", found ${JSON.stringify(person, null, 2)}`);
                 return person;
             });

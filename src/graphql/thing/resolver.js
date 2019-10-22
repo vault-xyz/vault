@@ -13,7 +13,7 @@ const resolver = {
                     ];
                 }, []);
 
-            const thing = things.find(thing => thing.id === id);
+            const thing = things.find(thing => thing._id === id);
             if (thing) {
                 const {
                     id,
@@ -38,10 +38,10 @@ const resolver = {
                 };
             }
         },
-        things(parent, args, ctx, info) {
+        things(parent, { limit, skip }, ctx, info) {
             const collections = Object.keys(ctx.db.database);
             const things = collections
-                .map(collection => ctx.db.find(collection, {}))
+                .map(collection => ctx.db.find(collection, {}, { limit, skip }))
                 .reduce((previousValue, currentValue) => {
                     return [
                         ...previousValue,

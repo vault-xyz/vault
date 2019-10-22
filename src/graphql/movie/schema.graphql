@@ -1,6 +1,6 @@
 type Query {
     movie(id: ID!): Movie
-    movies(director: ID, directors: [ID!], actor: ID, actors: [ID!]): [Movie!]
+    movies(director: ID, directors: [ID!], actor: ID, actors: [ID!], limit: Int, skip: Int): [Movie!]
 }
 
 type Mutation {

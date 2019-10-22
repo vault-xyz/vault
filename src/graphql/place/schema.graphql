@@ -1,6 +1,6 @@
 type Query {
     place(id: ID!): Place
-    places: [Place!]
+    places(limit: Int, skip: Int): [Place!]
 }
 
 type Mutation {

@@ -1,0 +1,12 @@
+type Query {
+    search(query: String!): SearchResult
+}
+
+union SearchResultType = AudioBook | Book | Country | Game | VideoGame | Movie | Occupation | Organization | Person | Place | Product | Show | CreativeWorkSeason | Episode
+
+type SearchResult {
+    result: SearchResultType
+    results: [SearchResultType]
+    searchResults: [JSON]
+    resultsFound: Int
+}

@@ -1,10 +1,6 @@
-scalar Date
-scalar JSON
-scalar Long
-
 type Query {
     person(id: ID!): Person
-    people: [Person!]
+    people(limit: Int, skip: Int, random: Boolean): [Person!]
 }
 
 type Mutation {

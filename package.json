@@ -8,27 +8,39 @@
   "license": "MIT",
   "scripts": {
     "start": "NODE_ENV=production node src/index.js",
-    "dev": "nodemon src/index.js",
+    "dev": "NODE_ENV=development nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@apollographql/graphql-playground-html": "^1.6.24",
     "apollo-errors": "^1.9.0",
+    "apollo-server-express": "^2.9.6",
     "chalk": "^2.4.2",
+    "deepmerge": "^4.2.0",
     "fromentries": "^1.2.0",
+    "graphql": "^14.5.8",
     "graphql-iso-date": "^3.6.1",
     "graphql-s2s": "^0.20.2",
     "graphql-type-json": "^0.3.0",
     "graphql-type-long": "^0.1.1",
-    "graphql-yoga": "1.18.1",
-    "luxon": "^1.17.2",
+    "graphql-yoga": "1.18.3",
+    "jsonbox-node": "^1.0.4",
+    "luxon": "^1.19.3",
+    "map-obj": "^4.1.0",
     "node-tvdb": "^4.1.0",
+    "p-iteration": "^1.1.8",
+    "parse-request": "^2.0.3",
     "schemaglue": "^4.0.4",
     "somewhere": "^1.0.1",
-    "sugar": "1.4.1",
-    "timezone": "^0.0.48",
-    "underscore": "1.5.2"
+    "storyboard": "^3.1.4",
+    "storyboard-listener-ws-server": "^3.1.4",
+    "storyboard-preset-console": "^3.1.4",
+    "sugar": "2.0.6",
+    "timezone": "^1.0.22",
+    "txi": "0.0.6-b",
+    "underscore": "1.9.1"
   },
   "devDependencies": {
-    "nodemon": "^1.19.1"
+    "nodemon": "^1.19.4"
   }
 }
