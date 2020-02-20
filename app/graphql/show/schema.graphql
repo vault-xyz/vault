@@ -1,0 +1,56 @@
+type Query {
+    show(id: ID!): Show
+    shows(limit: Int, skip: Int): [Show]
+    episode(id: ID!): Episode
+    episdoes(limit: Int, skip: Int): [Episode]
+}
+
+input CreateShowData {
+    name: String
+}
+
+input UpdateShowData {
+    name: String
+}
+
+input CreateEpisodeData {
+    name: String
+}
+
+input UpdateEpisodeData {
+    name: String
+}
+
+type Mutation {
+    createShow(data: CreateShowData): Show
+    updateShow(id: ID!, data: UpdateShowData): Show
+    deleteShow(id: ID!): Boolean
+    createEpisode(data: CreateEpisodeData): Episode
+    updateEpisode(id: ID!, data: UpdateEpisodeData): Episode
+    deleteEpisode(id: ID!): Boolean
+}
+
+type Show inherits CreativeWork {
+    genre: Genre
+    genres: [Genre]
+    description: String
+    episodes: [Episode]
+    seasons: [CreativeWorkSeason]
+    actors: [Person]
+    directors: [Person]
+    numberOfEpisodes: Long
+    numberOfSeasons: Long
+}
+
+type CreativeWorkSeason inherits CreativeWork {
+    partOfShow: Show!
+    episodes: [Episode]
+    seasonNumber: Long
+}
+
+type Episode inherits CreativeWork{
+    partOfShow: Show!
+    partOfSeason: CreativeWorkSeason
+    episodeNumber: Long
+    productionCompany: Organization
+}

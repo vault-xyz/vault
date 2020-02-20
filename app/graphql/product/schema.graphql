@@ -1,0 +1,15 @@
+type Query {
+    product(id: ID!): Product
+    products(limit: Int, skip: Int): [Product]
+}
+
+type Mutation {
+    deleteProduct(id: ID!): Boolean
+    createProduct(data: JSON): Product
+    updateProduct(id: ID!, data: JSON): Product
+}
+
+type Product inherits Thing {
+    # The Stock Keeping Unit (SKU), i.e. a merchant-specific identifier for a product or service, or the product to which the offer refers.
+    sku: Text
+}

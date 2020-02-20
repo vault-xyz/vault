@@ -1,0 +1,15 @@
+type Query {
+    organization(id: ID!): Organization
+    organizations(limit: Int, skip: Int): [Organization]
+}
+
+type Mutation {
+    deleteOrganization(id: ID!): Boolean
+    createOrganization(data: JSON): Organization
+    updateOrganization(id: ID!, data: JSON): Organization
+}
+
+type Organization inherits Thing{
+    alumni: [Person]
+    department: Organization
+}

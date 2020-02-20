@@ -1,0 +1,34 @@
+type Query {
+    book(id: ID!): Book
+    books(limit: Int, skip: Int): [Book]
+}
+
+type Mutation {
+    deleteBook(id: ID!): Boolean
+    createBook(data: JSON): Book
+    updateBook(id: ID!, data: JSON): Book
+}
+
+# The publication format of the book.
+enum BookFormat {
+    AudiobookFormat
+    EBook
+    GraphicNovel
+    Hardcover
+    Paperback
+}
+
+type Book inherits CreativeWork {
+    # Indicates whether the book is an abridged edition.
+    abridged: Boolean
+    # The edition of the book.
+    bookEdition: Text
+    # The format of the book.
+    bookFormat: BookFormat
+    # The illustrator of the book.
+    illustrator: Person
+    # The ISBN of the book.
+    isbn: Text
+    # The number of pages in the book.
+    numberOfPages: Int
+}

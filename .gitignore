@@ -1,1 +1,10 @@
+# Node
 node_modules/
+
+# Databases
+vault-rxdb*
+
+# Built files
+dist/
+
+.vscode/

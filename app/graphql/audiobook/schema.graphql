@@ -1,0 +1,17 @@
+type Query {
+    audiobook(id: ID!): AudioBook
+    audiobooks(limit: Int, skip: Int): [AudioBook]
+}
+
+type Mutation {
+    deleteAudioBook(id: ID!): Boolean
+    createAudioBook(data: JSON): AudioBook
+    updateAudioBook(id: ID!, data: JSON): AudioBook
+}
+
+type AudioBook inherits Book {
+    # The duration of the item (movie, audio recording, event, etc.) in ISO 8601 date format.
+    # duration: Duration
+    # A person who reads (performs) the audiobook.
+    readBy: Person
+}

@@ -1,0 +1,14 @@
+type Query {
+    country(id: ID!): Country
+    countries(limit: Int, skip: Int): [Country]
+}
+
+type Mutation {
+    deleteCountry(id: ID!): Boolean
+    createCountry(data: JSON): Country
+    updateCountry(id: ID!, data: JSON): Country
+}
+
+type Country inherits Place {
+    population: Text
+}

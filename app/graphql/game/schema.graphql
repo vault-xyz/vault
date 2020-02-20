@@ -1,0 +1,29 @@
+type Query {
+    game(id: ID!): VideoGame
+    games(limit: Int, skip: Int): [VideoGame]
+}
+
+type Mutation {
+    deleteGame(id: ID!): Boolean
+    createGame(data: JSON): Game
+    updateGame(id: ID!, data: JSON): Game
+}
+
+type Game inherits CreativeWork {
+    numberOfPlayers: QuantitativeValue
+}
+
+enum GamePlayMode {
+    CoOp
+    MultiPlayer
+    SinglePlayer
+}
+
+type VideoGameConsole inherits Thing {
+    releaseDate: Date
+}
+
+type VideoGame inherits Game {
+    playMode: [GamePlayMode]
+    gamePlatform: [VideoGameConsole]
+}
