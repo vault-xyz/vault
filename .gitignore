@@ -5,6 +5,6 @@ node_modules/
 vault-rxdb*
 
 # Built files
-dist/
+**/*.js
 
 .vscode/

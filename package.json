@@ -7,9 +7,11 @@
   "author": "Alexis Tyler <xo@wvvw.me> (https://wvvw.me/)",
   "license": "MIT",
   "scripts": {
-    "start": "./bin/www",
+    "build": "tsc",
     "prepare": "tsc",
-    "dev": "DEBUG=vault:* nodemon ./bin/www",
+    "start": "npm run build && ./bin/www",
+    "dev": "DEBUG=vault:* nodemon --exec npm start",
+    "deploy": "caprover deploy --default",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
