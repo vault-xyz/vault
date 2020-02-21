@@ -1,34 +1,53 @@
-import { Pool } from 'pg';
+import pgPromise from 'pg-promise';
 
-const pool = new Pool();
+const pg = pgPromise()({});
 
 export const db = {
     /**
      * Query the database directly.
      */
-    query: (text: string, params: any[]) => pool.query(text, params),
-    find(table: string) {
-
+    query: (text: string, params: any[]) => pg.query(text, params),
+    /**
+     * Get all rows in the table matching the query.
+     * @param table
+     * @param columns
+     * @param where
+     */
+    find: (table: string, columns?: string[], where?: string) => {
+        return pg.query('SELECT ${columns:name} FROM ${table:name}' + (where ? 'WHERE ${where:name}' : ''), {
+            table,
+            columns: columns || '*',
+            where
+        });
     },
-    findById: (table: string, id?: number) => {
-        // First row in table
-        if (!id) {
-            return pool.query(`SELECT * FROM ${table} LIMIT 1`);
-        }
-
-        // Row matching id
-        return pool.query(`SELECT * FROM ${table} WHERE id=$1;`, [id]);
+    /**
+     * Find a row in the table by it'd ID.
+     * @param table
+     * @param id
+     */
+    findById: (table: string, id: number, columns?: string[]) => {
+        return pg.query('SELECT ${columns:name} FROM ${table:name} WHERE ${where:name}', {
+            table,
+            columns,
+            where: `id=${id}`
+        });
     },
     /**
      * Delete a row from a table.
      * @param table
      * @param id
      */
-    delete: (table: string, id: number) => pool.query(`DELETE FROM ${table} WHERE id=$1;`, [id]),
+    delete: (table: string, id: number) => {},
     /**
      * Create a new row in a table.
      * @param table 
      * @param data 
      */
-    insert: (table, data) => pool.query(`INSERT INTO ${table} (${Object.keys(data).join(', ')})`, Object.values(data))
+    insert: (table, data) => {
+        return pg.query('INSERT INTO ${table:name}(${columns:name}) VALUES (${values:name})', {
+            table,
+            columns: data,
+            values: Object.values(data)
+        });
+    }
 };

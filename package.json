@@ -37,6 +37,7 @@
     "p-iteration": "^1.1.8",
     "parse-request": "^2.0.3",
     "pg": "7.18.1",
+    "pg-promise": "10.4.3",
     "pouchdb-adapter-node-websql": "^7.0.0",
     "rxdb": "^8.7.2",
     "rxjs": "^6.5.3",

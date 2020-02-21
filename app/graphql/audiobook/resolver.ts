@@ -3,7 +3,7 @@ import { db } from '../../db';
 export const resolver = {
     Query: {
         audiobook(parent, { id }, ctx, info) {
-            return db.findOneById('audio_book', id);
+            return db.findById('audio_book', id);
         },
         audiobooks(parent, args, ctx, info) {
             return db.find('audio_book');
