@@ -1,17 +1,17 @@
-const { createThing } = require('../../helpers');
+import { db } from '../../db';
 
-const resolver = {
+export const resolver = {
     Query: {
         occupation(parent, { id }, ctx, info) {
-            return db.findOne('occupation', { id });
+            return db.find('occupation', id);
         },
         occupations(parent, args, ctx, info) {
-            return db.find('occupation', {});
+            return db.find('occupation');
         }
     },
     Mutation: {
-        deleteOccupation: (parent, { id }, ctx, info) => db.delete(id),
-        createOccupation: (parent, { data }, ctx, info) => createThing({ type: 'Occupation', data, ctx }),
+        deleteOccupation: (parent, { id }, ctx, info) => { },
+        createOccupation: (parent, { data }, ctx, info) => { },
         updateOccupation: (parent, { id, data }, ctx, info) => {}
     }
 };

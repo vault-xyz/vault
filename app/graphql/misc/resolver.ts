@@ -1,9 +1,9 @@
-const { GraphQLJSONObject } = require('graphql-type-json');
-const GraphQLLong = require('graphql-type-long');
-const { GraphQLDateTime } = require('graphql-iso-date');
-const { __resolveType } = require('../../helpers');
+import { GraphQLJSONObject } from 'graphql-type-json';
+import GraphQLLong from 'graphql-type-long';
+import { GraphQLDateTime } from 'graphql-iso-date';
+import { __resolveType } from '../../helpers';
 
-const resolver = {
+export const resolver = {
     Query: {
         hello: (_, args) => `Hello ${args.name || 'World'}!`,
     },
@@ -18,8 +18,4 @@ const resolver = {
     Date: GraphQLDateTime,
     JSON: GraphQLJSONObject,
     Long: GraphQLLong
-};
-
-module.exports = {
-    resolver
 };

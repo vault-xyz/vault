@@ -3,11 +3,11 @@ const Debug = require('debug');
 
 const debug = Debug('vault:server');
 
-const __resolveType = (obj, ctx, info) => {
+export const __resolveType = (obj, ctx, info) => {
     return obj['@type'];
 };
 
-const log = process.env.NODE_ENV === 'development' ? console : {
+export const log = process.env.NODE_ENV === 'development' ? console : {
     info: debug,
     debug,
     log: debug,
@@ -15,10 +15,4 @@ const log = process.env.NODE_ENV === 'development' ? console : {
     warn: debug
 };
 
-const txi = new Txi();
-
-module.exports = {
-    __resolveType,
-    log,
-    txi
-};
+export const txi = new Txi();

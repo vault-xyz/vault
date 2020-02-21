@@ -1,7 +1,5 @@
-const { createError } = require('apollo-errors');
+import { createError } from 'apollo-errors';
 
-const AppError = createError('AppError', {
+export const AppError = createError('AppError', {
   message: 'Internal application error'
 });
-
-module.exports = AppError;

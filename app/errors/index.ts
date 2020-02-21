@@ -1,7 +1,2 @@
-const AppError = require('./app-error');
-const DatabaseError = require('./database-error');
-
-module.exports = {
-    AppError,
-    DatabaseError
-};
+export * from './app-error';
+export * from './database-error';

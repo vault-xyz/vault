@@ -1,21 +1,17 @@
-const { createThing } = require('../../helpers');
+import { db } from '../../db';
 
-const resolver = {
+export const resolver = {
     Query: {
         country(parent, { id }, ctx, info) {
-            return db.findOne('country', { id });
+            return db.find('country', id);
         },
         countries(parent, args, ctx, info) {
-            return db.find('country', {});
+            return db.find('country');
         }
     },
     Mutation: {
-        deleteCountry: (parent, { id }, ctx, info) => db.delete(id),
-        createCountry: (parent, { data }, ctx, info) => createThing({ type: 'Country', data, ctx }),
-        updateCountry: (parent, { id, data }, ctx, info) => {}
+        deleteCountry: (parent, { id }, ctx, info) => { },
+        createCountry: (parent, { data }, ctx, info) => { },
+        updateCountry: (parent, { id, data }, ctx, info) => { }
     }
-};
-
-module.exports = {
-    resolver
 };

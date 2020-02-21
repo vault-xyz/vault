@@ -1,12 +1,12 @@
-const { createThing, getAllPeople } = require('../../helpers');
+import { db } from '../../db';
 
-const resolver = {
+export const resolver = {
     Query: {
         movie(parent, { id }, ctx, info) {
-            return db.findOne('movie', { id });
+            return db.findById('movie', id);
         },
-        movies(parent, { director, directors, actor, actors, limit, skip }, ctx, info) {
-            const movies = db.find('movie', {});
+        async movies(parent, { director, directors, actor, actors, limit, skip }, ctx, info) {
+            const movies = await db.find('movie');
 
             const hasAll = field => itemsToCheck => {
                 // Ensure the movie has all the ids in the field
@@ -26,18 +26,14 @@ const resolver = {
         }
     },
     Mutation: {
-        deleteMovie: (parent, { id }, ctx, info) => db.delete(id),
-        createMovie: (parent, { data }, ctx, info) => createThing({ type: 'Movie', data, ctx }),
-        updateMovie: (parent, { id, data }, ctx, info) => {}
+        deleteMovie: (parent, { id }, ctx, info) => { },
+        createMovie: (parent, { data }, ctx, info) => { },
+        updateMovie: (parent, { id, data }, ctx, info) => { }
     },
     Movie: {
-        actors: getAllPeople('actors'),
+        actors: () => { },
         directors({ directors = [] }, args, ctx, info) {
-            return directors.map(id => db.findOne('people', { id }));
+            return directors.map(id => db.findById('people', id));
         }
     }
-};
-
-module.exports = {
-    resolver
 };

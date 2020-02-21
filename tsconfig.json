@@ -2,6 +2,9 @@
   "include": [
     "./app"
   ],
+  "exclude": [
+    "node_modules"
+  ],
   "compilerOptions": {
     /* Basic Options */
     // "incremental": true,                   /* Enable incremental compilation */

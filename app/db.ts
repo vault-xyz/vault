@@ -13,24 +13,28 @@ export const db = {
      * @param columns
      * @param where
      */
-    find: (table: string, columns?: string[], where?: string) => {
-        return pg.query('SELECT ${columns:name} FROM ${table:name}' + (where ? 'WHERE ${where:name}' : ''), {
+    async find<T = any>(table: string, columns?: string[], where?: string): Promise<T> {
+        const result = await pg.query('SELECT ${columns:name} FROM ${table:name}' + (where ? 'WHERE ${where:name}' : ''), {
             table,
             columns: columns || '*',
             where
         });
+
+        return(result as T);
     },
     /**
      * Find a row in the table by it'd ID.
      * @param table
      * @param id
      */
-    findById: (table: string, id: number, columns?: string[]) => {
-        return pg.query('SELECT ${columns:name} FROM ${table:name} WHERE ${where:name}', {
+    async findById<T = any>(table: string, id: number, columns?: string[]): Promise<T> {
+        const result = await pg.query('SELECT ${columns:name} FROM ${table:name} WHERE ${where:name}', {
             table,
-            columns,
+            columns: columns || '*',
             where: `id=${id}`
         });
+
+        return (result as T);
     },
     /**
      * Delete a row from a table.
