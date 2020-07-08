@@ -34,7 +34,7 @@
     "node-tvdb": "^4.1.0",
     "p-iteration": "^1.1.8",
     "parse-request": "^2.0.6",
-    "pg": "7.18.2",
+    "pg": "8.2.2",
     "pg-promise": "10.4.3",
     "schemaglue": "^4.0.4",
     "somewhere": "^1.0.1",
